@@ -45,6 +45,14 @@ services:
     env_file:
       - .env
 
+  parser:
+    build: ./services/parser
+    container_name: telegram_platform_parser
+    depends_on:
+      - kafka
+    env_file:
+      - .env
+
   raw_writer:
     build: ./services/raw_writer
     container_name: telegram_platform_raw_writer

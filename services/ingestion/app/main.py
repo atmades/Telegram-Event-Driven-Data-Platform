@@ -8,8 +8,12 @@ from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filte
 from app.config import settings
 from app.event_builder import build_telegram_message_event
 
-
 logging.basicConfig(level=logging.INFO)
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("telegram").setLevel(logging.WARNING)
+logging.getLogger("apscheduler").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 producer = Producer({
@@ -29,11 +33,6 @@ def delivery_report(err, msg):
         )
 
 
-async def on_shutdown(application):
-    logger.info("Shutting down ingestion service...")
-    producer.flush(10)
-
-
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
@@ -49,6 +48,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     producer.poll(0)
 
     logger.info("Produced event_id=%s", event["event_id"])
+
+
+async def on_shutdown(application):
+    logger.info("Shutting down ingestion service...")
+    producer.flush(10)
+    logger.info("Kafka producer flushed")
 
 
 def main():
