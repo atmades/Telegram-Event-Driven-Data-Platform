@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: telegram_platform_postgres
+    environment:
+      POSTGRES_DB: telegram_events
+      POSTGRES_USER: platform_user
+      POSTGRES_PASSWORD: platform_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: telegram_platform_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: telegram_platform_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      KAFKA_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  ingestion:
+    build: ./services/ingestion
+    container_name: telegram_platform_ingestion
+    depends_on:
+      - kafka
+    env_file:
+      - .env
+
+  raw_writer:
+    build: ./services/raw_writer
+    container_name: telegram_platform_raw_writer
+    depends_on:
+      - kafka
+      - postgres
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:
