@@ -71,5 +71,15 @@ services:
     env_file:
       - .env
 
+  api:
+    build: ./services/api
+    container_name: telegram_platform_api
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+
 volumes:
   postgres_data:
