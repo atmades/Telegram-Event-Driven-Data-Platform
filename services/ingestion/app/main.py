@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 producer = Producer({
     "bootstrap.servers": settings.kafka_bootstrap_servers,
+    "acks": "all",
+    "retries": 3,
+    "enable.idempotence": True,
 })
 
 

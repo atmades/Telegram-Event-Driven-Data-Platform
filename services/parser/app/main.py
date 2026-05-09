@@ -20,6 +20,9 @@ consumer = Consumer({
 
 producer = Producer({
     "bootstrap.servers": settings.kafka_bootstrap_servers,
+    "acks": "all",
+    "retries": 3,
+    "enable.idempotence": True,
 })
 
 
@@ -33,6 +36,28 @@ def delivery_report(err, msg):
             msg.partition(),
             msg.offset(),
         )
+
+def send_to_dlq(raw_event: dict, reason: str):
+    dlq_event = {
+        "event_id": raw_event.get("event_id"),
+        "source_topic": settings.kafka_raw_topic,
+        "error_reason": reason,
+        "payload": raw_event,
+    }
+
+    producer.produce(
+        topic=settings.kafka_dlq_topic,
+        key=raw_event.get("event_id"),
+        value=json.dumps(dlq_event).encode("utf-8"),
+        callback=delivery_report,
+    )
+    producer.poll(0)
+
+    logger.warning(
+        "Sent raw_event_id=%s to DLQ. Reason=%s",
+        raw_event.get("event_id"),
+        reason,
+    )
 
 
 def main():
@@ -68,10 +93,7 @@ def main():
                     parsed_event["event_id"],
                 )
             else:
-                logger.info(
-                    "Raw event_id=%s was skipped by parser",
-                    raw_event.get("event_id"),
-                )
+                send_to_dlq(raw_event, "Could not parse expense from text")
 
             consumer.commit(msg)
 
