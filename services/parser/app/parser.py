@@ -2,6 +2,12 @@ import re
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from app.constants import (
+    EVENT_TYPE_EXPENSE_RECORDED,
+    SOURCE_PARSER,
+    SCHEMA_VERSION,
+)
+
 
 def parse_expense_text(text: str) -> dict | None:
     match = re.search(r"(.+?)\s+(\d+(?:[.,]\d+)?)$", text.strip())
@@ -35,9 +41,9 @@ def build_parsed_event(raw_event: dict) -> dict | None:
 
     return {
         "event_id": str(uuid4()),
-        "event_type": "expense_recorded",
+        "event_type": EVENT_TYPE_EXPENSE_RECORDED,
         "event_time": now.isoformat(),
-        "source": "parser",
+        "source": SOURCE_PARSER,
         "raw_event_id": raw_event["event_id"],
         "telegram": {
             "chat_id": telegram.get("chat_id"),
@@ -46,7 +52,7 @@ def build_parsed_event(raw_event: dict) -> dict | None:
         },
         "expense": parsed,
         "metadata": {
-            "schema_version": 1,
+            "schema_version": SCHEMA_VERSION,
             "parsed_at": now.isoformat(),
         },
     }

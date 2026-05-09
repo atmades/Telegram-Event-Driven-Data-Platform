@@ -5,6 +5,7 @@ from confluent_kafka import Consumer, Producer
 
 from app.config import settings
 from app.parser import build_parsed_event
+from app.constants import DLQ_REASON_PARSE_FAILED
 
 
 logging.basicConfig(level=logging.INFO)
@@ -93,7 +94,7 @@ def main():
                     parsed_event["event_id"],
                 )
             else:
-                send_to_dlq(raw_event, "Could not parse expense from text")
+                send_to_dlq(raw_event, DLQ_REASON_PARSE_FAILED)
 
             consumer.commit(msg)
 
