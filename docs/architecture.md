@@ -6,35 +6,21 @@ This system is designed as an event-driven data platform where all interactions 
 
 ## High-Level Architecture
 ```mermaid
-graph TD
-    TG[Telegram] --> ING[Ingestion Service]
-    ING --> KAFKA[(Kafka Event Log)]
-    
-    subgraph CONSUMERS [Parallel Consumers]
-        direction TB
-        RW[Raw Writer]
-        PARSER[Parser]
-        PROJ[Projector]
-    end
-    
-    KAFKA --> RW
-    KAFKA --> PARSER
-    KAFKA --> PROJ
-    
-    RW --> DB[(PostgreSQL)]
-    PARSER --> DB
-    PROJ --> DB
-    
-    DB --> API[FastAPI]
-    
-    classDef svc fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
-    classDef mq fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    
-    class ING,RW,PARSER,PROJ,API svc;
-    class KAFKA mq;
-    class DB db;
+flowchart TD
 
+A[Telegram] --> B[Ingestion Service]
+B --> C[Kafka: telegram.raw_events]
+
+C --> D[Raw Writer]
+D --> E[(Postgres: raw_telegram_events)]
+
+C --> F[Parser]
+F --> G[Kafka: telegram.parsed_events]
+
+G --> H[Projector]
+H --> I[(Postgres: expenses)]
+
+I --> J[API: FastAPI]
 ```
 
     

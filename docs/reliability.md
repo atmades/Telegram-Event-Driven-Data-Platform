@@ -74,33 +74,33 @@ telegram.dlq
 ### Failure Scenarios
 
 ```mermaid
-
 flowchart TD
-    subgraph RESILIENCE [🛡️ Failure & Recovery Patterns]
-        P1[🔴 Parser Failure] --> P2[⚠️ Invalid data / logic error]
-        P2 --> P3[📤 Route to DLQ]
-        P3 --> P4[✅ Consumer continues processing]
 
-        D1[🟠 Database Failure] --> D2[⚠️ Write timeout / connection loss]
-        D2 --> D3[🔄 Consumer crashes / stops]
-        D3 --> D4[✅ Auto-retry on restart via committed offset]
+A[Incoming Event] --> B{JSON Decode OK?}
 
-        K1[🟡 Kafka Unavailable] --> K2[⚠️ Broker down / network issue]
-        K2 --> K3[🔁 Producer internal retries]
-        K3 --> K4[✅ Idempotent delivery guaranteed]
-    end
+B -- No --> DLQ1[DLQ: json_decode_failed]
 
-    classDef title fill:#f8f9fa,stroke:#adb5bd,stroke-width:2px;
-    classDef error fill:#ffebee,stroke:#c62828,stroke-width:2px;
-    classDef action fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
-    classDef success fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+B -- Yes --> C{Parsing OK?}
 
-    class P1,D1,K1 title;
-    class P2,D2,K2 error;
-    class P3,D3,K3 action;
-    class P4,D4,K4 success;
-    
-  ```
+C -- No --> DLQ2[DLQ: schema_validation_failed]
+
+C -- Yes --> D[Produce Parsed Event]
+
+D --> E{Kafka Available?}
+
+E -- No --> Retry1[Producer Retries]
+
+E -- Yes --> F[Parsed Event Stored in Kafka]
+
+F --> G[Projector Consumer]
+
+G --> H{DB Write OK?}
+
+H -- No --> Retry2[Retry on Restart]
+
+H -- Yes --> I[Projection Updated]
+
+```
 
 
 ### Graceful Shutdown

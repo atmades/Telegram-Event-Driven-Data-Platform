@@ -10,34 +10,22 @@ User messages from Telegram are ingested, transformed into events, processed via
 
 ## Architecture
 ```mermaid
-graph TD
-    subgraph Ingestion
-        TG[Telegram] --> ING[Ingestion Service]
-        ING --> KAFKA_RAW[(Kafka: raw_events)]
-    end
+flowchart TD
 
-    subgraph Processing
-        KAFKA_RAW --> RW[Raw Writer]
-        KAFKA_RAW --> PARSER[Parser Service]
-        
-        RW --> DB_RAW[(Postgres: raw_events)]
-        
-        PARSER --> KAFKA_P[(Kafka: parsed_events)]
-        KAFKA_P --> PROJ[Projector Service]
-    end
+A[Telegram] --> B[Ingestion Service]
+B --> C[Kafka: telegram.raw_events]
 
-    subgraph Serving
-        PROJ --> DB_EXP[(Postgres: expenses)]
-        DB_EXP --> API[FastAPI]
-    end
+C --> D[Raw Writer]
+D --> E[(Postgres: raw_telegram_events)]
 
-    classDef svc fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
-    classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef mq fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    
-    class ING,RW,PARSER,PROJ,API svc;
-    class DB_RAW,DB_EXP db;
-    class KAFKA_RAW,KAFKA_P mq;
+C --> F[Parser]
+F --> G[Kafka: telegram.parsed_events]
+F -->|invalid events| L[Kafka: telegram.dlq]
+
+G --> H[Projector]
+H --> I[(Postgres: expenses)]
+
+I --> J[API: FastAPI]
 ```
 
 
