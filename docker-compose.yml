@@ -46,7 +46,9 @@ services:
       - .env
 
   parser:
-    build: ./services/parser
+    build:
+      context: .
+      dockerfile: services/parser/Dockerfile
     container_name: telegram_platform_parser
     depends_on:
       - kafka
@@ -54,13 +56,15 @@ services:
       - .env
 
   projector:
-    build: ./services/projector
-    container_name: telegram_platform_projector
-    depends_on:
-      - kafka
-      - postgres
-    env_file:
-      - .env
+   build:
+    context: .
+    dockerfile: services/projector/Dockerfile
+   container_name: telegram_platform_projector
+   depends_on:
+    - kafka
+    - postgres
+   env_file:
+    - .env
 
   raw_writer:
     build: ./services/raw_writer
