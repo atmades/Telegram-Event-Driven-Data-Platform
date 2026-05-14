@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     postgres_host: str = "postgres"
     postgres_port: int = 5432
 
+    projector_mode: str = "normal"
+    projector_consumer_group: str = "expense-projector-consumer"
+
     class Config:
         env_file = ".env"
 

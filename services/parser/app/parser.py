@@ -7,7 +7,8 @@ from app.constants import (
     SOURCE_PARSER,
     SCHEMA_VERSION,
 )
-from app.models import ParsedExpenseEvent
+
+from shared.events import ParsedExpenseEvent
 
 def parse_expense_text(text: str) -> dict | None:
     match = re.search(r"(.+?)\s+([\d\s]+(?:[.,]\d+)?)$", text.strip())
