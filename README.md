@@ -29,7 +29,7 @@ I --> J[API: FastAPI]
 ```
 
 
-## ⚙️ Components
+## Components
 
 ### 1. Ingestion Service
 - Receives Telegram messages
@@ -96,6 +96,69 @@ Projection table with structured data:
 ### Fault Tolerance
 - consumers handle parsing errors gracefully
 - system does not crash on bad input
+
+## Replay Capability
+
+The system supports replaying historical events from Kafka to rebuild PostgreSQL projections from scratch.
+
+This is useful when:
+
+- fixing parsing or transformation bugs
+- rebuilding projections after schema changes
+- recovering from data corruption
+- backfilling new analytical models
+
+Replay mode works by:
+
+1. Truncating the `expenses` projection table
+2. Starting the projector with a new consumer group
+3. Reading all events from `telegram.parsed_events`
+4. Rebuilding the projection deterministically
+
+### Enable Replay
+
+Set the following in `.env`:
+
+```env
+PROJECTOR_MODE=replay
+PROJECTOR_CONSUMER_GROUP=expense-projector-replay-001
+```
+
+Then recreate the projector:
+```
+docker compose up -d --force-recreate projector
+```
+
+After replay is complete, restore normal mode:
+```
+PROJECTOR_MODE=normal
+PROJECTOR_CONSUMER_GROUP=expense-projector-consumer
+```
+
+## Testing
+
+The project includes automated unit tests for the parser service.
+
+Covered scenarios include:
+
+- valid expense messages
+- amounts with spaces (`"1 200"`)
+- invalid messages without numeric amounts
+- building structured `expense_recorded` events
+- rejecting unsupported text
+
+### Run Tests
+
+```bash
+docker compose run --rm parser pytest tests -v
+```
+
+### Example Output
+```bash
+5 passed
+```
+
+Testing is executed inside Docker to ensure a fully reproducible environment.
 
 ## Tech Stack
 
