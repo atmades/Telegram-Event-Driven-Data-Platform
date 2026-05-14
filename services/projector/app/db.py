@@ -37,10 +37,7 @@ def get_connection_with_retry(max_attempts: int = 30, delay_seconds: int = 2):
     raise RuntimeError("Could not connect to Postgres after retries")
 
 
-def insert_expense(conn, event: dict):
-    expense = event["expense"]
-    telegram = event.get("telegram", {})
-
+def insert_expense(conn, event):
     query = """
         INSERT INTO expenses (
             expense_id,
@@ -61,16 +58,23 @@ def insert_expense(conn, event: dict):
         cur.execute(
             query,
             (
-                event["event_id"],
-                event["raw_event_id"],
-                event["event_time"],
-                telegram.get("chat_id"),
-                telegram.get("user_id"),
-                telegram.get("username"),
-                expense["description"],
-                expense["amount"],
-                expense["currency"],
+                event.event_id,
+                event.raw_event_id,
+                event.event_time,
+                event.telegram.chat_id,
+                event.telegram.user_id,
+                event.telegram.username,
+                event.expense.description,
+                event.expense.amount,
+                event.expense.currency,
             ),
         )
+
+    conn.commit()
+
+## Clean projection table
+def truncate_expenses(conn):
+    with conn.cursor() as cur:
+        cur.execute("TRUNCATE TABLE expenses;")
 
     conn.commit()
